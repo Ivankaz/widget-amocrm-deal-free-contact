@@ -1,0 +1,10 @@
+{
+  "widget": {
+    "name": "Deal-free contact",
+    "short_description": "The widget creates a new task for all contacts without trades with the text \"Contact without deals\".",
+    "description": "The widget creates a new task for all contacts without trades with the text \"Contact without deals\"."
+  },
+  "settings": {
+    "login": "User login"
+  }
+}

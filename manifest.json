@@ -1,0 +1,30 @@
+{
+  "widget": {
+    "name": "widget.name",
+    "description": "widget.description",
+    "short_description": "widget.short_description",
+    "version": "1.0.0",
+    "interface_version": 2,
+    "init_once": false,
+    "locale": [
+      "ru",
+      "en"
+    ],
+    "installation": true,
+    "support": {
+      "link": "https://ivankazakov.blog",
+      "email": "ivankaz9@yandex.ru"
+    }
+  },
+  "locations": [
+    "tline-0",
+    "tlist-0"
+  ],
+  "settings": {
+    "login": {
+      "name": "settings.login",
+      "type": "text",
+      "required": false
+    }
+  }
+}
