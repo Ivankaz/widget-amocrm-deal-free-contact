@@ -8,7 +8,65 @@ define(['jquery'], function ($) {
             render: function () {
                 console.log('render');
 
-                console.log('self.system().area: ' + self.system().area);
+                // получение контактов
+                function getContacts(page = 1) {
+                    let contacts = [];
+
+                    return new Promise((resolve, reject) => {
+                        // жду данные
+                        $.ajax({
+                            url: '/api/v4/contacts',
+                            method: 'GET',
+                            async: false,
+                            data: {
+                                'limit': 250,
+                                'page': page,
+                                'with': 'leads'
+                            }
+                        }).done(function (data) {
+                            // если есть контакты
+                            if ((typeof (data) === 'object') && (data._embedded.contacts.length !== 0)) {
+                                // добавяю их в массив
+                                contacts.push(...data._embedded.contacts);
+
+                                // получаю следующую страницу с контактами
+                                let getNextContacts = () => {
+                                    getContacts(++page).then(result => {
+                                        // если контактов больше нет
+                                        if (result.length == 0) {
+                                            // данные готовы
+                                            resolve(contacts);
+                                        } else {
+                                            // добавяю их в массив
+                                            contacts.push(...result);
+                                            // получаю следующую страницу с контактами
+                                            getNextContacts();
+                                        }
+                                    }).catch(error => {
+                                        // возвращаю ошибку
+                                        reject(new Error(error));
+                                    });
+                                }
+                                getNextContacts();
+                            } else {
+                                // данные готовы
+                                resolve(contacts);
+                            }
+                        }).fail(function (data) {
+                            // возвращаю ошибку
+                            reject(new Error(`Не удалось получить контакты`));
+                        });
+                    });
+                }
+
+                let contacts = [];
+                // получаю контакты
+                getContacts().then(result => {
+                    contacts = result;
+                    console.log(contacts);
+                }).catch(error => {
+                    console.error(error);
+                });
 
                 return true;
             },
