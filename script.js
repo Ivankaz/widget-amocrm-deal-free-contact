@@ -59,16 +59,31 @@ define(['jquery'], function ($) {
                     });
                 }
 
-                let contacts = [];
-                // получаю контакты
-                getContacts().then(result => {
-                    contacts = result;
-                    console.log(contacts);
+                // получение контактов без сделок
+                function getContactsWithoutDeal() {
+                    return new Promise((resolve, reject) => {
+                        // получаю все контакты
+                        getContacts().then(contacts => {
+                            // оставляю контакты без сделок
+                            let contactsWithoutDeal = contacts.filter(contact => {
+                                return contact._embedded.leads.length == 0;
+                            });
+
+                            // возвращаю контакты без сделок
+                            resolve(contactsWithoutDeal);
+                        }).catch(error => {
+                            // возвращаю ошибку
+                            reject(error);
+                        });
+                    });
+                }
+
+                // получаю контакты без сделок
+                getContactsWithoutDeal().then(contactsWithoutDeal => {
+                    console.log(contactsWithoutDeal);
                 }).catch(error => {
                     console.error(error);
                 });
-
-                return true;
             },
             // сбор необходимой информации, взаимодействие со сторонним сервером
             // вызывается сразу после render одновременно с bind_actions
