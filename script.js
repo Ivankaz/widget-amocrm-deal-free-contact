@@ -64,9 +64,11 @@ define(['jquery'], function ($) {
                     return new Promise((resolve, reject) => {
                         // получаю все контакты
                         getContacts().then(contacts => {
-                            // оставляю контакты без сделок
+                            // оставляю ID контактов без сделок
                             let contactsWithoutDeal = contacts.filter(contact => {
                                 return contact._embedded.leads.length == 0;
+                            }).map(contact => {
+                                return contact.id;
                             });
 
                             // возвращаю контакты без сделок
@@ -78,9 +80,84 @@ define(['jquery'], function ($) {
                     });
                 }
 
+                /**
+                 * создание задачи "Контакт без сделок"
+                 * @param entity_id ID контакта
+                 */
+                function createTaskContactWithoutDeal(entity_id) {
+                    // срок выполнения задачи = завтра
+                    const complete_till = Math.floor((Date.now() + 24 * 3600 * 1000) / 1000);
+                    const text = 'Контакт без сделок';
+                    const entity_type = 'contacts';
+
+                    $.ajax({
+                        url: '/api/v4/tasks',
+                        method: 'POST',
+                        data: JSON.stringify([{
+                            text,
+                            complete_till,
+                            entity_id,
+                            entity_type
+                        }])
+                    }).fail(function (data) {
+                        console.error('Не удалось создать задачу');
+                        return false;
+                    });
+                }
+
+                /**
+                 * получение контактов, по которым ещё не создали задачу "Контакт без сделок"
+                 * @param contactsWithoutDeal ID контактов без сделок
+                 */
+                function getContactsWithoutTask(contactsWithoutDeal) {
+                    return new Promise((resolve, reject) => {
+                        $.ajax({
+                            url: '/api/v4/tasks',
+                            method: 'GET',
+                            data: JSON.stringify([{
+                                'filter': {
+                                    'entity_type': 'contacts',
+                                    'entity_id': contactsWithoutDeal
+                                }
+                            }])
+                        }).done(function (data) {
+                            // по умолчанию считаю, что все контакты без сделки не имеют задачи
+                            let contactsWithoutTask = contactsWithoutDeal;
+
+                            // если получили от сервера объект с задачами
+                            if (typeof data === 'object') {
+                                // получаю контакты, по которым уже создали задачу "Контакт без сделок"
+                                let contactsWithTask = data._embedded.tasks.map((task) => {
+                                    if (task.text === 'Контакт без сделок') {
+                                        return task.entity_id;
+                                    }
+                                });
+
+                                // оставляю только те контакты, по которым ещё не создали задачу "Контакт без сделок"
+                                contactsWithoutTask = contactsWithoutDeal.filter((contactWithoutDeal) => {
+                                    return !contactsWithTask.includes(contactWithoutDeal);
+                                });
+                            }
+
+                            // возвращаю контакты
+                            resolve(contactsWithoutTask);
+                        }).fail(function (data) {
+                            // возвращаю ошибку
+                            reject(new Error('Не удалось получить задачи'));
+                            return false;
+                        });
+                    });
+                }
+
                 // получаю контакты без сделок
                 getContactsWithoutDeal().then(contactsWithoutDeal => {
-                    console.log(contactsWithoutDeal);
+                    // получаю контакты, для которых ещё не создали задачу "Контакт без сделок"
+                    getContactsWithoutTask(contactsWithoutDeal).then(contactsWithoutTask => {
+                        // создаю задачу для каждого контакта без сделки
+                        contactsWithoutTask.forEach((contactWithoutTask) => {
+                            createTaskContactWithoutDeal(contactWithoutTask);
+                        });
+                    });
                 }).catch(error => {
                     console.error(error);
                 });
